@@ -1,82 +1,73 @@
 import * as React from "react";
 import { wrapPromise, randomNumberAndTimeout } from "./Api";
 
-const RomaJS = ({ resource }) => {
+function RomaJS({ resource, children }) {
   const triggerSuspense = resource.num.read();
-  return <div className="roma-js" />;
-};
+  return <div className="roma-js">{children}</div>;
+}
 
 const tailOptions = ["none", "hidden", "collapsed"];
+const revealOrderOptions = [
+  { revealOrder: "", label: "No Suspense List" },
+  { revealOrder: "forwards" },
+  { revealOrder: "backwards" },
+  { revealOrder: "together" },
+];
+
+const fetchResources = (count) => {
+  const resources = [];
+  for (let i = 0; i < count; i++) {
+    resources.push(wrapPromise(randomNumberAndTimeout()));
+  }
+  return resources;
+};
+
+const createBody = (count, resources) => {
+  let body = [];
+
+  console.log(resources, count);
+
+  for (let i = 0; i < count; i++) {
+    body.push(
+      <React.Suspense key={i} fallback={<div className="sandloader">⌛</div>}>
+        <RomaJS resource={{ num: resources[i] }} />
+      </React.Suspense>
+    );
+  }
+
+  return body;
+};
 
 export const SuspenseGrid = () => {
-  let body = [];
-  const [n] = React.useState(391);
-  const [groupSize] = React.useState(3);
-  const [outerRevealOrder, setOuterRevealOrder] = React.useState("");
+  const [count] = React.useState(391);
+  const [revealOrder, setRevealOrder] = React.useState("");
   const [tail, setTail] = React.useState(tailOptions[0]);
-  const fetchResources = () => {
-    const resources = [];
-    for (let i = 0; i < n; i++) {
-      resources.push(wrapPromise(randomNumberAndTimeout()));
-    }
-    return resources;
-  };
-  const [resources, setResources] = React.useState(() => fetchResources());
+  const [resources, setResources] = React.useState(() => fetchResources(count));
 
-  for (let i = 0; i < n / groupSize - groupSize; i++) {
-    const group = [];
-    for (let k = 0; k < groupSize; k++) {
-      const idx = i * groupSize + k;
-      group.push(
-        <React.Suspense
-          key={idx}
-          fallback={<div className="sandloader">⌛</div>}
-        >
-          <RomaJS resource={{ num: resources[idx] }} />
-        </React.Suspense>
-      );
-    }
-    body.push(...group);
-  }
+  const body = createBody(count, resources);
+
+  const refreshResources = () => {
+    setResources(fetchResources(count));
+  };
 
   return (
     <div className="show">
       <h1>🚀 React SuspenseList Example</h1>
-      <button
-        className="suspense-btn"
-        onClick={() => {
-          setOuterRevealOrder("");
-          setResources(fetchResources());
-        }}
-      >
-        No Suspense List
-      </button>
-      <button
-        className="suspense-btn"
-        onClick={() => {
-          setOuterRevealOrder("forwards");
-          setResources(fetchResources());
-        }}
-      >
-        Forwards
-      </button>
-      <button
-        className="suspense-btn"
-        onClick={() => {
-          setOuterRevealOrder("backwards");
-          setResources(fetchResources());
-        }}
-      >
-        Backwards
-      </button>
-      <button
-        className="suspense-btn"
-        onClick={() => {
-          setOuterRevealOrder("together");
-          setResources(fetchResources());
-        }}
-      >
-        Together
+      {revealOrderOptions.map(({ label, revealOrder: revealOrderOption }) => (
+        <button
+         key={revealOrderOption}
+          onClick={() => {
+            setRevealOrder(revealOrderOption);
+            refreshResources();
+          }}
+          className="suspense-btn"
+          type="button"
+        >
+          {label ?? revealOrderOption} {revealOrderOption === revealOrder && '✔'}
+        </button>
+      ))}
+      <button type="button" className="suspense-btn" onClick={refreshResources}>
+        refresh
       </button>
       <select
         id="tail"
@@ -85,15 +76,17 @@ export const SuspenseGrid = () => {
         onChange={({ currentTarget }) => setTail(currentTarget.value)}
       >
         {tailOptions.map((value) => (
-          <option key={value}>tail: {value}</option>
+          <option key={value} value={value}>
+            tail: {value}
+          </option>
         ))}
       </select>
       <div className={"suspense-grid"}>
-        {!outerRevealOrder && body}
-        {!!outerRevealOrder && (
+        {!revealOrder && body}
+        {!!revealOrder && (
           <React.SuspenseList
             tail={tail === "none" ? undefined : tail}
-            revealOrder={outerRevealOrder}
+            revealOrder={revealOrder}
           >
             {body}
           </React.SuspenseList>

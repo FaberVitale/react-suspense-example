@@ -1,12 +1,12 @@
-export const wrapPromise = promise => {
+export const wrapPromise = (promise) => {
   let status = "pending";
   let result = "";
   let suspender = promise.then(
-    r => {
+    (r) => {
       status = "success";
       result = r;
     },
-    e => {
+    (e) => {
       status = "error";
       result = e;
     }
@@ -20,12 +20,12 @@ export const wrapPromise = promise => {
         throw result;
       }
       return result;
-    }
+    },
   };
 };
 
 export const randomNumber = () => {
-  return new Promise(res => setTimeout(() => res(Math.random()), 3000));
+  return new Promise((res) => setTimeout(() => res(Math.random()), 3000));
 };
 
 function getRandomArbitrary(min, max) {
@@ -33,7 +33,7 @@ function getRandomArbitrary(min, max) {
 }
 
 export const randomNumberAndTimeout = () => {
-  return new Promise(res =>
+  return new Promise((res) =>
     setTimeout(
       () => res(Math.round(Math.random() * 1000)),
       getRandomArbitrary(1000, 5000)
